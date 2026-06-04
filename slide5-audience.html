@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>投票：電子支付讓你花更多嗎？</title>
+<style>
+  :root {
+    --navy: #0D1B2A;
+    --white: #F0F6FF;
+    --muted: #8AA4C8;
+    --green: #10B981;
+    --red: #EF4444;
+    --amber: #F59E0B;
+    --cyan: #06B6D4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    width: 100%; max-width: 400px;
+    text-align: center;
+  }
+  h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.4; }
+  .desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 2rem; }
+
+  .choices { display: flex; flex-direction: column; gap: 14px; }
+  .choice-btn {
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.06);
+    color: var(--white);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 14px;
+    text-align: left;
+  }
+  .choice-btn .emoji { font-size: 1.6rem; flex-shrink: 0; }
+  .choice-btn .text-wrap .main { font-size: 1rem; font-weight: 700; }
+  .choice-btn .text-wrap .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-weight: 400; }
+
+  .choice-btn.yes:hover, .choice-btn.yes.voted {
+    background: rgba(239,68,68,0.2); border-color: var(--red); color: var(--white);
+  }
+  .choice-btn.no:hover, .choice-btn.no.voted {
+    background: rgba(16,185,129,0.2); border-color: var(--green);
+  }
+  .choice-btn.maybe:hover, .choice-btn.maybe.voted {
+    background: rgba(245,158,11,0.2); border-color: var(--amber);
+  }
+  .choice-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+
+  .success {
+    display: none; margin-top: 1.5rem;
+    background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 12px; padding: 14px;
+    color: var(--green); font-size: 14px; font-weight: 600;
+  }
+  .success.show { display: block; animation: pop 0.3s; }
+  @keyframes pop { 0%{transform:scale(0.9);opacity:0} 100%{transform:scale(1);opacity:1} }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>電子支付讓你<br>花更多錢嗎？</h1>
+  <p class="desc">Pain of Paying 研究互動</p>
+
+  <div class="choices">
+    <button class="choice-btn yes" onclick="vote('yes')">
+      <span class="emoji">📈</span>
+      <div class="text-wrap">
+        <div class="main">是的，花更多了</div>
+        <div class="sub">感覺花錢沒有痛感，不自覺超支</div>
+      </div>
+    </button>
+    <button class="choice-btn no" onclick="vote('no')">
+      <span class="emoji">💰</span>
+      <div class="text-wrap">
+        <div class="main">沒有，差不多</div>
+        <div class="sub">有記帳習慣，電子支付不影響我</div>
+      </div>
+    </button>
+    <button class="choice-btn maybe" onclick="vote('maybe')">
+      <span class="emoji">🤔</span>
+      <div class="text-wrap">
+        <div class="main">不確定</div>
+        <div class="sub">還沒仔細想過這個問題</div>
+      </div>
+    </button>
+  </div>
+
+  <div class="success" id="success">✓ 投票成功！感謝你的參與</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAlBZIMsos3aTHr5-4M6vopCk9mCJv-IPU",
+  authDomain: "payment-presentation.firebaseapp.com",
+  databaseURL: "https://payment-presentation-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "payment-presentation",
+  storageBucket: "payment-presentation.firebasestorage.app",
+  messagingSenderId: "288068120899",
+  appId: "1:288068120899:web:03a33e0ab3c4b78db2bff6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const votesRef = ref(db, 'poll/votes');
+
+let voted = false;
+window.vote = async (choice) => {
+  if (voted) return;
+  voted = true;
+  document.querySelectorAll('.choice-btn').forEach(b => {
+    b.disabled = true;
+    if (b.classList.contains(choice)) b.classList.add('voted');
+  });
+  await push(votesRef, { choice, ts: Date.now() });
+  document.getElementById('success').classList.add('show');
+};
+</script>
+</body>
+</html>

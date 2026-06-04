@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>輸入你的支付方式</title>
+<style>
+  :root {
+    --navy: #0D1B2A;
+    --blue: #1A56DB;
+    --cyan: #06B6D4;
+    --white: #F0F6FF;
+    --muted: #8AA4C8;
+    --green: #10B981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+  .icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 28px;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .desc { font-size: 0.9rem; color: var(--muted); margin-bottom: 2rem; line-height: 1.6; }
+
+  .quick-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .quick-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 10px 8px;
+    color: var(--white);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .quick-btn:hover, .quick-btn.selected {
+    background: rgba(6,182,212,0.2);
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
+  .divider { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+  .divider::before, .divider::after { content:''; flex:1; border-top: 1px solid rgba(255,255,255,0.1); }
+  .divider span { font-size: 12px; color: var(--muted); }
+
+  .input-wrap { position: relative; margin-bottom: 1rem; }
+  input[type="text"] {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--white);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--cyan); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  .btn-submit {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-submit:hover { opacity: 0.9; }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .success-msg {
+    display: none;
+    margin-top: 1rem;
+    background: rgba(16,185,129,0.15);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--green);
+    font-size: 14px;
+  }
+  .success-msg.show { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
+
+  .submitted-words {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .tag {
+    background: rgba(6,182,212,0.15);
+    border: 1px solid rgba(6,182,212,0.3);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 13px;
+    color: var(--cyan);
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">💳</div>
+  <h1>你平常用哪種支付方式？</h1>
+  <p class="desc">點選下方快速選項，或自行輸入，可以多選！</p>
+
+  <div class="quick-btns">
+    <button class="quick-btn" onclick="quickSelect(this, 'Line Pay')"><span>📱</span> Line Pay</button>
+    <button class="quick-btn" onclick="quickSelect(this, '街口支付')"><span>🟠</span> 街口支付</button>
+    <button class="quick-btn" onclick="quickSelect(this, '信用卡')"><span>💳</span> 信用卡</button>
+    <button class="quick-btn" onclick="quickSelect(this, '現金')"><span>💵</span> 現金</button>
+    <button class="quick-btn" onclick="quickSelect(this, 'Apple Pay')"><span></span> Apple Pay</button>
+    <button class="quick-btn" onclick="quickSelect(this, '悠遊卡')"><span>🚇</span> 悠遊卡</button>
+  </div>
+
+  <div class="divider"><span>或自行輸入</span></div>
+
+  <div class="input-wrap">
+    <input type="text" id="custom-input" placeholder="例如：全支付、Pi 錢包…" maxlength="20">
+  </div>
+  <button class="btn-submit" id="submit-btn" onclick="submitWord()">送出</button>
+
+  <div class="success-msg" id="success-msg">
+    ✓ 已送出！感謝你的參與
+  </div>
+  <div class="submitted-words" id="submitted-words"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAlBZIMsos3aTHr5-4M6vopCk9mCJv-IPU",
+  authDomain: "payment-presentation.firebaseapp.com",
+  databaseURL: "https://payment-presentation-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "payment-presentation",
+  storageBucket: "payment-presentation.firebasestorage.app",
+  messagingSenderId: "288068120899",
+  appId: "1:288068120899:web:03a33e0ab3c4b78db2bff6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const votesRef = ref(db, 'wordcloud/votes');
+
+let selectedWords = new Set();
+
+window.quickSelect = (btn, word) => {
+  if (selectedWords.has(word)) {
+    selectedWords.delete(word);
+    btn.classList.remove('selected');
+  } else {
+    selectedWords.add(word);
+    btn.classList.add('selected');
+  }
+};
+
+window.submitWord = async () => {
+  const custom = document.getElementById('custom-input').value.trim();
+  if (custom) selectedWords.add(custom);
+  if (!selectedWords.size) return;
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+
+  for (const word of selectedWords) {
+    await push(votesRef, { word, ts: Date.now() });
+  }
+
+  // show submitted tags
+  const tagsEl = document.getElementById('submitted-words');
+  selectedWords.forEach(w => {
+    const tag = document.createElement('span');
+    tag.className = 'tag'; tag.textContent = w;
+    tagsEl.appendChild(tag);
+  });
+
+  document.getElementById('success-msg').classList.add('show');
+  document.getElementById('custom-input').value = '';
+  selectedWords.clear();
+  document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('selected'));
+
+  setTimeout(() => {
+    btn.disabled = false;
+    document.getElementById('success-msg').classList.remove('show');
+  }, 3000);
+};
+
+document.getElementById('custom-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') window.submitWord();
+});
+</script>
+</body>
+</html>

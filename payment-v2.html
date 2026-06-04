@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>支付媒介之演進</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020b18;--bg2:#041020;--bg3:#061628;
+  --blue:#0ea5e9;--cyan:#06ffa5;--gold:#f59e0b;
+  --white:#f0f8ff;--muted:#4a7090;--red:#ff4560;--purple:#8b5cf6;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:'Noto Sans TC',sans-serif;color:var(--white);}
+
+/* Grid bg */
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(14,165,233,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(14,165,233,0.04) 1px,transparent 1px);
+  background-size:80px 80px;pointer-events:none;z-index:0;}
+
+/* Deck */
+#deck{width:100vw;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;opacity:0;pointer-events:none;
+  transition:opacity .6s ease,transform .6s ease;transform:translateX(60px);z-index:1;}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0);z-index:2;}
+.slide.exit{opacity:0;transform:translateX(-60px);z-index:1;}
+
+/* Nav */
+#nav{position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%);
+  z-index:200;display:flex;align-items:center;gap:.8rem;
+  background:rgba(2,11,24,.9);border:1px solid rgba(14,165,233,.25);
+  border-radius:999px;padding:8px 20px;backdrop-filter:blur(16px);}
+.ndot{width:7px;height:7px;border-radius:50%;background:rgba(14,165,233,.2);
+  cursor:pointer;transition:all .3s;border:none;}
+.ndot.active{background:var(--blue);box-shadow:0 0 8px var(--blue);}
+#nprev,#nnext{background:transparent;border:1px solid rgba(14,165,233,.3);
+  border-radius:50%;width:30px;height:30px;color:var(--blue);font-size:13px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+#nprev:hover,#nnext:hover{background:rgba(14,165,233,.15);}
+#ncnt{font-size:11px;color:var(--muted);min-width:36px;text-align:center;
+  font-family:'JetBrains Mono',monospace;}
+
+/* Common */
+.si{flex:1;display:flex;flex-direction:column;padding:4rem 5rem 5rem;
+  position:relative;overflow:hidden;height:100vh;}
+.stag{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--blue);
+  font-weight:700;margin-bottom:.8rem;font-family:'JetBrains Mono',monospace;opacity:.8;}
+.stag::before{content:'// ';}
+.h1{font-size:3.8rem;font-weight:900;letter-spacing:-.03em;line-height:1.05;color:var(--white);margin-bottom:.4rem;}
+.h1 .ac{color:var(--blue);}
+.h1 .ac2{color:var(--cyan);}
+.sub{font-size:1rem;color:var(--muted);margin-bottom:2rem;font-weight:300;}
+.gline{width:50px;height:3px;background:linear-gradient(90deg,var(--blue),var(--cyan));
+  border-radius:2px;margin-bottom:1.8rem;box-shadow:0 0 12px var(--blue);}
+.live{display:inline-flex;align-items:center;gap:6px;background:rgba(6,255,165,.1);
+  border:1px solid rgba(6,255,165,.3);border-radius:999px;padding:3px 12px;
+  font-size:11px;color:var(--cyan);font-weight:700;font-family:'JetBrains Mono',monospace;}
+.live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.2;}}
+.card{background:rgba(6,22,40,.8);border:1px solid rgba(14,165,233,.15);
+  border-radius:16px;padding:2rem;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));}
+.ibox{background:rgba(14,165,233,.06);border-left:3px solid var(--blue);
+  border-radius:0 8px 8px 0;padding:.9rem 1.1rem;font-size:.88rem;
+  color:var(--muted);line-height:1.7;}
+.ibox strong{color:var(--white);}
+.btn-clr{padding:7px 14px;background:rgba(255,69,96,.1);border:1px solid rgba(255,69,96,.3);
+  border-radius:8px;color:#fca5a5;font-size:12px;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;transition:background .2s;}
+.btn-clr:hover{background:rgba(255,69,96,.2);}
+.hint{font-size:11px;color:var(--muted);background:rgba(14,165,233,.06);
+  border:1px solid rgba(14,165,233,.12);border-radius:8px;padding:7px 11px;
+  font-family:'JetBrains Mono',monospace;}
+
+/* ── S1 Cover ── */
+#s1{background:radial-gradient(ellipse at 25% 60%,rgba(14,165,233,.18) 0%,transparent 55%),
+  radial-gradient(ellipse at 80% 20%,rgba(6,255,165,.08) 0%,transparent 50%),var(--bg);}
+#s1 .si{justify-content:center;}
+.cover-eye{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue);
+  letter-spacing:.2em;margin-bottom:1.5rem;opacity:.7;}
+#s1 .h1{font-size:4.5rem;}
+#s1 .h1 span{display:block;background:linear-gradient(135deg,var(--blue) 0%,var(--cyan) 60%,#60a5fa 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.cover-meta{display:flex;flex-direction:column;gap:5px;font-size:14px;
+  color:rgba(240,248,255,.55);border-left:2px solid var(--blue);padding-left:1rem;margin-top:2rem;}
+.cover-meta strong{color:var(--white);}
+.cover-bg{position:absolute;right:-3rem;top:50%;transform:translateY(-50%);
+  font-size:22rem;font-weight:900;color:rgba(14,165,233,.025);
+  pointer-events:none;user-select:none;letter-spacing:-.05em;line-height:1;}
+/* Phone SVG */
+.phone-wrap{position:absolute;right:8%;top:50%;transform:translateY(-50%);width:260px;}
+
+/* ── S2 Word Cloud ── */
+#s2 .wlay{display:grid;grid-template-columns:1fr 290px;gap:1.5rem;flex:1;min-height:0;}
+#cwrap{position:relative;border:1px solid rgba(14,165,233,.15);border-radius:14px;
+  overflow:hidden;background:rgba(4,16,32,.6);}
+#ccanvas{position:absolute;inset:0;width:100%;height:100%;}
+#cph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;color:var(--muted);font-size:14px;pointer-events:none;}
+.wside{display:flex;flex-direction:column;gap:.9rem;}
+.wtot{text-align:center;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);
+  border-radius:12px;padding:1.1rem;}
+.wtot .big{font-size:3.2rem;font-weight:900;color:var(--cyan);line-height:1;
+  font-family:'JetBrains Mono',monospace;}
+.wtot .lbl{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;}
+.wltit{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;}
+#wlist{display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:200px;}
+.wrow{display:flex;align-items:center;gap:7px;font-size:12px;}
+.wrnk{color:var(--muted);width:14px;font-family:'JetBrains Mono',monospace;font-size:10px;}
+.wword{flex:0 0 75px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wbg{flex:1;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;}
+.wbf{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:2px;transition:width .5s;}
+.wcnt{color:var(--cyan);width:22px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;}
+/* QR */
+.qr-block{background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.15);
+  border-radius:12px;padding:1rem;text-align:center;}
+.qr-block .qlbl{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px;}
+.qr-block canvas{border-radius:6px;}
+
+/* ── S3 Reveal ── */
+#s3 .si{padding:0;}
+#s3 .header{padding:3rem 5rem 1.2rem;flex-shrink:0;}
+#rwrap{flex:1;position:relative;overflow:hidden;}
+.rpanel{position:absolute;inset:0;display:flex;flex-direction:column;padding:1rem 5rem 5rem;}
+#rmd{background:var(--bg);z-index:1;}
+#rhtml{background:linear-gradient(135deg,#030d1a,#051525);clip-path:inset(0 100% 0 0);z-index:2;}
+.mdcode{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:2;color:#64748b;}
+.mdcode .mh2{color:#60a5fa;font-weight:700;font-size:15px;}
+.mdcode .mh3{color:#34d399;font-weight:700;}
+.mdcode .mb{color:#f8fafc;font-weight:700;}
+.mdcode .mth{color:#f59e0b;}
+.mdcode .mv{color:var(--cyan);}
+.mdcode .mq{color:#a78bfa;font-style:italic;}
+.mdcode .ms{color:#374151;}
+.rtit{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);
+  margin-bottom:1.2rem;letter-spacing:.15em;}
+#rdiv{position:absolute;top:0;bottom:0;left:0;width:2px;
+  background:linear-gradient(180deg,transparent,var(--blue),var(--cyan),var(--blue),transparent);
+  z-index:10;pointer-events:none;box-shadow:0 0 12px var(--blue);}
+#rhandle{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  z-index:20;cursor:ew-resize;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 20px rgba(14,165,233,.7);user-select:none;}
+.rlabs{position:absolute;bottom:4.5rem;left:0;right:0;z-index:15;
+  display:flex;justify-content:space-between;padding:0 5rem;pointer-events:none;}
+.rlab{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);
+  background:rgba(2,11,24,.85);border-radius:999px;padding:3px 10px;
+  border:1px solid rgba(14,165,233,.2);}
+.rhint{position:absolute;bottom:4.5rem;left:50%;transform:translateX(-50%);
+  font-size:11px;color:rgba(255,255,255,.35);font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;z-index:16;animation:fh 5s ease 1s forwards;}
+@keyframes fh{0%{opacity:1;}70%{opacity:1;}100%{opacity:0;}}
+/* HTML side stats */
+.rst{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-bottom:1.2rem;}
+.rsc{border-radius:10px;padding:.9rem;text-align:center;}
+.rsc .rv{font-size:1.8rem;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1;}
+.rsc .rl{font-size:10px;color:var(--muted);margin-top:3px;}
+.rtbl{width:100%;border-collapse:collapse;}
+.rtbl th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  padding:6px 14px;border-bottom:1px solid rgba(14,165,233,.15);text-align:left;
+  font-family:'JetBrains Mono',monospace;}
+.rtbl td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
+.rtbl tr:hover td{background:rgba(14,165,233,.04);}
+.rnum{font-size:1.3rem;font-weight:900;color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.rbar{display:flex;align-items:center;gap:8px;}
+.rbbg{flex:1;height:7px;background:rgba(14,165,233,.08);border-radius:4px;overflow:hidden;}
+.rbf{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:4px;}
+.ryr{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+/* ── S4 Cash Paradox ── */
+#s4 .lay2{display:grid;grid-template-columns:1fr 1fr;gap:1.8rem;flex:1;}
+.bignum{font-size:5rem;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1;}
+
+/* ── S5 Pain ── */
+#s5 .pgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.3rem;flex:1;}
+.pcrd{background:rgba(6,22,40,.8);border:1px solid rgba(14,165,233,.12);border-radius:14px;
+  padding:1.5rem;display:flex;flex-direction:column;gap:.7rem;transition:transform .3s,border-color .3s;}
+.pcrd:hover{transform:translateY(-3px);border-color:rgba(14,165,233,.3);}
+.pdim{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;}
+.pvs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:.4rem;}
+.vsi{border-radius:8px;padding:8px 9px;font-size:12px;}
+.vsd{background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.2);color:var(--blue);}
+.vsc{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:var(--gold);}
+.vsl{font-size:9px;opacity:.7;margin-bottom:2px;font-family:'JetBrains Mono',monospace;}
+.vsv{font-weight:700;font-size:13px;}
+.pbot{grid-column:1/-1;background:linear-gradient(135deg,rgba(255,69,96,.08),rgba(245,158,11,.08));
+  border:1px solid rgba(255,69,96,.2);border-radius:12px;padding:1.2rem 1.8rem;
+  display:flex;align-items:center;gap:1.2rem;}
+.pbot .qt{font-size:1.4rem;font-weight:900;flex:1;}
+.pbot .qt span{color:var(--gold);}
+
+/* ── S6 Vote ── */
+#s6 .vlay{display:grid;grid-template-columns:1fr 270px;gap:1.8rem;flex:1;min-height:0;}
+.vbars{display:flex;flex-direction:column;justify-content:center;gap:1.8rem;}
+.vi{display:flex;flex-direction:column;gap:8px;}
+.vh{display:flex;align-items:center;gap:10px;}
+.vico{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.vn{font-size:1rem;font-weight:700;flex:1;}
+.vp{font-size:2.5rem;font-weight:900;font-family:'JetBrains Mono',monospace;}
+.vtrk{height:16px;background:rgba(255,255,255,.05);border-radius:999px;overflow:hidden;}
+.vfil{height:100%;border-radius:999px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.vct{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.vyes .vico{background:rgba(255,69,96,.15);}
+.vyes .vp{color:var(--red);}
+.vyes .vfil{background:linear-gradient(90deg,#ff4560,#f97316);}
+.vno .vico{background:rgba(6,255,165,.12);}
+.vno .vp{color:var(--cyan);}
+.vno .vfil{background:linear-gradient(90deg,var(--cyan),#06b6d4);}
+.vmb .vico{background:rgba(245,158,11,.15);}
+.vmb .vp{color:var(--gold);}
+.vmb .vfil{background:linear-gradient(90deg,var(--gold),#eab308);}
+.vside{display:flex;flex-direction:column;gap:.9rem;}
+.vtot{text-align:center;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);
+  border-radius:12px;padding:1rem;}
+.vtot .big{font-size:3rem;font-weight:900;color:var(--cyan);line-height:1;
+  font-family:'JetBrains Mono',monospace;}
+.vtot .lbl{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;}
+.vleg{display:flex;flex-direction:column;gap:7px;}
+.vlrow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.vldot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ── S7 Nudge ── */
+#s7 .nlay{display:grid;grid-template-columns:1fr 1fr;gap:1.8rem;flex:1;}
+.nbig{font-size:5rem;font-weight:900;color:var(--blue);font-family:'JetBrains Mono',monospace;line-height:1;}
+.nlist{display:flex;flex-direction:column;gap:.9rem;}
+.nitem{display:flex;gap:10px;align-items:flex-start;}
+.ndot2{width:7px;height:7px;border-radius:50%;background:var(--cyan);flex-shrink:0;margin-top:5px;}
+.nitem p{font-size:.88rem;color:var(--muted);line-height:1.6;}
+.nitem p strong{color:var(--white);}
+
+/* ── S8 Poll ── */
+#s8 .play{display:grid;grid-template-columns:340px 1fr;gap:2rem;flex:1;}
+.dwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;}
+.dleg{display:flex;flex-direction:column;gap:10px;width:100%;}
+.dlrow{display:flex;align-items:center;gap:10px;}
+.dlc{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.dln{font-size:13px;flex:1;}
+.dlp{font-size:1.3rem;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--cyan);}
+.pright{display:flex;flex-direction:column;gap:1.1rem;justify-content:center;}
+.psc{background:rgba(6,22,40,.8);border:1px solid rgba(14,165,233,.12);border-radius:12px;
+  padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;}
+.pp{font-size:2.5rem;font-weight:900;font-family:'JetBrains Mono',monospace;min-width:80px;}
+.pi h4{font-size:.95rem;font-weight:700;}
+.pi p{font-size:.82rem;color:var(--muted);line-height:1.5;margin-top:2px;}
+
+/* ── S9 Persona ── */
+#s9 .pelay{display:grid;grid-template-columns:1fr 1fr;gap:1.8rem;flex:1;}
+.pecrd{background:rgba(6,22,40,.8);border-radius:14px;padding:1.8rem;
+  display:flex;flex-direction:column;gap:.9rem;border:1px solid rgba(14,165,233,.15);position:relative;overflow:hidden;}
+.pecrd::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.pecrd.dig::before{background:linear-gradient(90deg,var(--blue),var(--cyan));}
+.pecrd.csh::before{background:linear-gradient(90deg,var(--gold),#f97316);}
+.pebdg{display:inline-block;font-size:10px;font-weight:700;border-radius:999px;
+  padding:2px 10px;font-family:'JetBrains Mono',monospace;}
+.dig .pebdg{background:rgba(14,165,233,.15);color:var(--blue);}
+.csh .pebdg{background:rgba(245,158,11,.15);color:var(--gold);}
+.peh3{font-size:1.5rem;font-weight:900;}
+.petrs{display:flex;flex-direction:column;gap:7px;}
+.petr{display:flex;gap:9px;font-size:.85rem;}
+.petk{color:var(--muted);flex-shrink:0;width:36px;font-family:'JetBrains Mono',monospace;font-size:10px;padding-top:2px;}
+.petv{color:var(--white);line-height:1.5;}
+.peq{margin-top:auto;font-size:.82rem;color:var(--muted);font-style:italic;
+  border-top:1px solid rgba(255,255,255,.05);padding-top:.9rem;}
+
+/* ── S10 Data ── */
+#s10 .dlay{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.4rem;flex:1;}
+.stpc{background:rgba(6,22,40,.8);border:1px solid rgba(14,165,233,.12);
+  border-radius:14px;padding:1.7rem;display:flex;flex-direction:column;gap:.9rem;position:relative;}
+.stpn{font-size:4rem;font-weight:900;color:rgba(14,165,233,.12);
+  font-family:'JetBrains Mono',monospace;line-height:1;position:absolute;top:.8rem;right:1.2rem;}
+.stpc h3{font-size:1rem;font-weight:700;color:var(--blue);}
+.stpc p{font-size:.86rem;color:var(--muted);line-height:1.7;}
+.dbot{background:linear-gradient(135deg,rgba(14,165,233,.07),rgba(6,255,165,.07));
+  border:1px solid rgba(14,165,233,.18);border-radius:12px;padding:1.1rem 2rem;
+  display:flex;align-items:center;justify-content:center;}
+.dbot .qt{font-size:1.05rem;font-weight:700;text-align:center;}
+.dbot .qt span{color:var(--cyan);}
+
+/* ── S11 Policy ── */
+#s11 .polay{display:grid;grid-template-columns:1fr 1fr;gap:1.8rem;flex:1;}
+.pocrd{background:rgba(6,22,40,.8);border-radius:14px;padding:1.8rem;
+  display:flex;flex-direction:column;gap:1.1rem;border:1px solid rgba(14,165,233,.12);}
+.poico{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;
+  justify-content:center;font-size:1.5rem;}
+.inc .poico{background:rgba(6,255,165,.12);}
+.reg .poico{background:rgba(139,92,246,.15);}
+.pocrd h3{font-size:1.05rem;font-weight:700;}
+.pocrd p{font-size:.86rem;color:var(--muted);line-height:1.7;}
+
+/* ── S12 Conclusion ── */
+#s12 .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;flex:1;}
+.ccrd{background:rgba(6,22,40,.8);border:1px solid rgba(14,165,233,.12);
+  border-radius:14px;padding:1.7rem;display:flex;flex-direction:column;gap:.7rem;}
+.ctag{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--blue);font-weight:700;}
+.ccrd h3{font-size:.98rem;font-weight:700;}
+.ccrd p{font-size:.83rem;color:var(--muted);line-height:1.7;}
+
+/* ── S13 Thanks ── */
+#s13{background:radial-gradient(ellipse at 50% 50%,rgba(14,165,233,.18) 0%,transparent 65%),var(--bg);}
+#s13 .si{justify-content:center;align-items:center;text-align:center;}
+.tyico{font-size:5rem;animation:flt 3s ease-in-out infinite;margin-bottom:1rem;}
+@keyframes flt{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.tyh1{font-size:5.5rem;font-weight:900;letter-spacing:-.03em;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.tysub{font-size:1.2rem;color:var(--muted);margin-top:.8rem;}
+.tymin{font-size:.85rem;color:rgba(74,112,144,.6);margin-top:.4rem;font-family:'JetBrains Mono',monospace;}
+.pts{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.pt{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--blue);animation:pf linear infinite;}
+@keyframes pf{0%{transform:translateY(100vh);opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{transform:translateY(-80px);opacity:0;}}
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- S1 Cover -->
+<div class="slide active" id="s1">
+<div class="si">
+  <div class="cover-bg">PAY</div>
+  <div class="cover-eye">[ FINANCIAL TECHNOLOGY RESEARCH · GROUP 9 · 2026 ]</div>
+  <div class="h1" style="font-size:4.8rem;">支付媒介之演進
+    <span>電子支付與現金的<br>共存與典範轉移</span>
+  </div>
+  <p class="sub" style="font-size:1.1rem;">Payment Medium Evolution: Digital &amp; Cash Co-existence</p>
+  <div class="cover-meta">
+    <span>指導教授：<strong>林泰宇</strong></span>
+    <span>第九組</span>
+    <span><strong>1141051012</strong> 李秋萍　<strong>1141051018</strong> 李育璟</span>
+  </div>
+  <!-- Phone SVG -->
+  <div class="phone-wrap">
+    <svg viewBox="0 0 220 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Phone body -->
+      <rect x="10" y="10" width="200" height="380" rx="32" fill="#061628" stroke="rgba(14,165,233,0.4)" stroke-width="2"/>
+      <!-- Screen -->
+      <rect x="22" y="22" width="176" height="356" rx="22" fill="#020b18"/>
+      <!-- Camera notch -->
+      <rect x="85" y="28" width="50" height="8" rx="4" fill="#061628"/>
+      <!-- App UI -->
+      <rect x="40" y="70" width="140" height="50" rx="10" fill="rgba(14,165,233,0.12)" stroke="rgba(14,165,233,0.3)" stroke-width="1"/>
+      <text x="55" y="90" fill="#0ea5e9" font-size="11" font-family="monospace">NT$ 12,480</text>
+      <text x="55" y="107" fill="#4a7090" font-size="9" font-family="monospace">餘額</text>
+      <!-- Pay button -->
+      <rect x="55" y="140" width="110" height="44" rx="14" fill="url(#paygrad)"/>
+      <text x="110" y="167" fill="white" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">感應付款</text>
+      <!-- NFC rings -->
+      <circle cx="110" cy="240" r="30" stroke="rgba(6,255,165,0.5)" stroke-width="1.5" fill="none">
+        <animate attributeName="r" from="20" to="40" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.8" to="0" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="110" cy="240" r="30" stroke="rgba(6,255,165,0.4)" stroke-width="1.5" fill="none">
+        <animate attributeName="r" from="20" to="55" dur="2s" begin="0.4s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.6" to="0" dur="2s" begin="0.4s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="110" cy="240" r="30" stroke="rgba(6,255,165,0.3)" stroke-width="1.5" fill="none">
+        <animate attributeName="r" from="20" to="68" dur="2s" begin="0.8s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" from="0.4" to="0" dur="2s" begin="0.8s" repeatCount="indefinite"/>
+      </circle>
+      <!-- Contactless icon -->
+      <circle cx="110" cy="240" r="16" fill="rgba(6,255,165,0.15)" stroke="rgba(6,255,165,0.6)" stroke-width="1.5"/>
+      <text x="110" y="245" fill="#06ffa5" font-size="14" text-anchor="middle">📶</text>
+      <!-- Status bar -->
+      <rect x="40" y="310" width="140" height="36" rx="10" fill="rgba(6,255,165,0.08)" stroke="rgba(6,255,165,0.25)" stroke-width="1"/>
+      <circle cx="58" cy="328" r="5" fill="#06ffa5">
+        <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+      <text x="70" y="332" fill="#06ffa5" font-size="10" font-family="monospace">NFC 連線中</text>
+      <defs>
+        <linearGradient id="paygrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0ea5e9"/>
+          <stop offset="100%" stop-color="#06ffa5"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+</div>
+</div>
+
+<!-- S2 Word Cloud -->
+<div class="slide" id="s2">
+<div class="si">
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.5rem;">
+    <div class="stag" style="margin:0;">互動環節</div>
+    <span class="live">LIVE</span>
+  </div>
+  <div class="h1" style="font-size:3rem;">你平常用哪種<span class="ac">支付方式</span>？</div>
+  <p class="sub">掃描 QR Code，即時參與文字雲投票</p>
+  <div class="wlay">
+    <div id="cwrap">
+      <div id="cph">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.25"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        等待學生輸入中…
+      </div>
+      <canvas id="ccanvas"></canvas>
+    </div>
+    <div class="wside">
+      <div class="wtot">
+        <div class="big" id="wctotal">0</div>
+        <div class="lbl">// TOTAL_RESPONSES</div>
+      </div>
+      <div class="wltit">// TOP_KEYWORDS</div>
+      <div id="wlist"></div>
+      <div class="qr-block">
+        <div class="qlbl">// 學生掃碼參與</div>
+        <canvas id="qr2"></canvas>
+      </div>
+      <button class="btn-clr" onclick="resetWC()">清除資料</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S3 Reveal -->
+<div class="slide" id="s3">
+<div class="si">
+  <div class="header">
+    <div class="stag">數據視覺化</div>
+    <div class="h1" style="font-size:3rem;">支付型態的<span class="ac">結構性轉移</span></div>
+    <p class="sub">拖動滑桿，見證 Markdown → 視覺化呈現</p>
+  </div>
+  <div id="rwrap">
+    <div class="rpanel" id="rmd">
+      <div class="rtit">{ Markdown 原始碼 }</div>
+      <div class="mdcode">
+<span class="mh2">## 支付型態的結構性轉移</span><br>
+<span class="mh3">### 邁向 10 兆規模的非現金時代</span><br><br>
+<span class="mth">| 年份 | 非現金支付金額 | 備註 |</span><br>
+<span class="mth">|------|--------------|------|</span><br>
+| 2022 | <span class="mv">3.17 兆</span> | 基準年 |<br>
+| 2023 | <span class="mv">8.27 兆</span> | 爆發性成長 |<br>
+| 2024 | <span class="mv">8.30 兆</span> | 持續擴張 |<br>
+| 2025 | <span class="mv">8.74 兆</span> | 預測值 |<br>
+| 2026 | <span class="mv">10.00 兆</span> | 全年目標 |<br><br>
+<span class="mb">**核心洞察**</span><br>
+- 台灣非現金支付已成交易媒介首選<br>
+- 從卡片演進為行動支付＋電子帳戶生態系<br><br>
+<span class="mq">> 「電子支付成長，不代表現金死亡。」</span><br><br>
+<span class="ms">*(資料來源：金管會銀行局統計專區)*</span>
+      </div>
+    </div>
+    <div class="rpanel" id="rhtml">
+      <div class="rtit" style="color:var(--cyan);">{ HTML 渲染結果 }</div>
+      <div class="rst">
+        <div class="rsc" style="background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);">
+          <div class="rv" style="color:var(--cyan);">3,947萬</div>
+          <div class="rl">電子支付用戶</div>
+        </div>
+        <div class="rsc" style="background:rgba(6,255,165,.06);border:1px solid rgba(6,255,165,.2);">
+          <div class="rv" style="color:var(--cyan);">234億</div>
+          <div class="rl">2月代收付金額</div>
+        </div>
+        <div class="rsc" style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);">
+          <div class="rv" style="color:var(--gold);">10兆</div>
+          <div class="rl">2026全年目標</div>
+        </div>
+      </div>
+      <table class="rtbl">
+        <thead><tr><th>年份</th><th>交易金額</th><th>進度</th></tr></thead>
+        <tbody>
+          <tr><td class="ryr">2022</td><td><span class="rnum">3.17兆</span></td><td><div class="rbar"><div class="rbbg"><div class="rbf" style="width:32%"></div></div><span style="font-size:10px;color:var(--muted);">32%</span></div></td></tr>
+          <tr><td class="ryr">2023</td><td><span class="rnum">8.27兆</span></td><td><div class="rbar"><div class="rbbg"><div class="rbf" style="width:83%"></div></div><span style="font-size:10px;color:var(--muted);">83%</span></div></td></tr>
+          <tr><td class="ryr">2024</td><td><span class="rnum">8.30兆</span></td><td><div class="rbar"><div class="rbbg"><div class="rbf" style="width:83%"></div></div><span style="font-size:10px;color:var(--muted);">83%</span></div></td></tr>
+          <tr><td class="ryr">2025</td><td><span class="rnum">8.74兆</span></td><td><div class="rbar"><div class="rbbg"><div class="rbf" style="width:87%"></div></div><span style="font-size:10px;color:var(--muted);">87%</span></div></td></tr>
+          <tr><td class="ryr">2026</td><td><span class="rnum" style="color:var(--gold);">10兆</span></td><td><div class="rbar"><div class="rbbg"><div class="rbf" style="width:100%;background:linear-gradient(90deg,var(--gold),#f97316)"></div></div><span style="font-size:10px;color:var(--gold);">目標</span></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="rdiv"></div>
+    <div id="rhandle">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/></svg>
+    </div>
+    <div class="rlabs">
+      <span class="rlab">{ Markdown }</span>
+      <span class="rlab">HTML ▶ <span id="rpct">0%</span></span>
+    </div>
+    <div class="rhint">← 拖動滑桿查看渲染效果 →</div>
+  </div>
+</div>
+</div>
+
+<!-- S4 Cash Paradox -->
+<div class="slide" id="s4">
+<div class="si">
+  <div class="stag">貨幣悖論</div>
+  <div class="h1">「支付轉型」與「通貨需求」的<span class="ac">並行</span></div>
+  <p class="sub">電子支付激增，現金需求為何未消失？</p>
+  <div class="lay2">
+    <div class="card">
+      <div style="font-size:2.5rem;margin-bottom:.5rem;">📱</div>
+      <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem;">電子支付的爆發</h3>
+      <div class="bignum" style="color:var(--cyan);">3,947<span style="font-size:2.5rem;">萬</span></div>
+      <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:.8rem;">// 電子支付帳戶總數（2026.02）</div>
+      <p style="font-size:.88rem;color:var(--muted);line-height:1.7;">月增約 78 萬用戶，LINE Pay Money 上線短短 3 個月即奪下代收付第一，成功超越街口與全支付。</p>
+      <div class="ibox" style="margin-top:auto;">數位化已從卡片演進為「行動支付＋電子帳戶」的完整生態系。</div>
+    </div>
+    <div class="card" style="border-color:rgba(245,158,11,.2);">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),#f97316);"></div>
+      <div style="font-size:2.5rem;margin-bottom:.5rem;">💵</div>
+      <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem;">現金的韌性</h3>
+      <div class="bignum" style="color:var(--gold);">3.0<span style="font-size:2.5rem;">兆</span></div>
+      <div style="font-size:11px;color:rgba(245,158,11,.6);font-family:'JetBrains Mono',monospace;margin-bottom:.8rem;">// 中央銀行通貨發行額（穩定維持）</div>
+      <p style="font-size:.88rem;color:var(--muted);line-height:1.7;">現金功能定位轉型：由「主支付工具」轉為「流動性保險」與「場景備援機制」。</p>
+      <div class="ibox" style="border-color:var(--gold);margin-top:auto;">「現金不會消失，而是與電子支付長期共存、互補。」</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S5 Pain of Paying -->
+<div class="slide" id="s5">
+<div class="si">
+  <div class="stag">行為經濟學</div>
+  <div class="h1">支付痛感 <span class="ac">Pain of Paying</span></div>
+  <p class="sub">電子支付如何改變我們的消費心理？</p>
+  <div class="pgrid">
+    <div class="pcrd">
+      <div class="pdim">// 交易摩擦力</div>
+      <div style="font-size:1rem;font-weight:700;">Transaction Friction</div>
+      <div class="pvs">
+        <div class="vsi vsd"><div class="vsl">DIGITAL</div><div class="vsv">極低 ✓</div></div>
+        <div class="vsi vsc"><div class="vsl">CASH</div><div class="vsv">較高</div></div>
+      </div>
+    </div>
+    <div class="pcrd">
+      <div class="pdim">// 物理剝奪感</div>
+      <div style="font-size:1rem;font-weight:700;">Physical Loss</div>
+      <div class="pvs">
+        <div class="vsi vsd"><div class="vsl">DIGITAL</div><div class="vsv">無感</div></div>
+        <div class="vsi vsc"><div class="vsl">CASH</div><div class="vsv">強烈 ✓</div></div>
+      </div>
+    </div>
+    <div class="pcrd">
+      <div class="pdim">// 預算控管力</div>
+      <div style="font-size:1rem;font-weight:700;">Budget Control</div>
+      <div class="pvs">
+        <div class="vsi vsd"><div class="vsl">DIGITAL</div><div class="vsv">易失控</div></div>
+        <div class="vsi vsc"><div class="vsl">CASH</div><div class="vsv">天然抑制 ✓</div></div>
+      </div>
+    </div>
+    <div class="pcrd pbot">
+      <div class="qt">支付越<span>無感</span>，消費越容易<span>失控</span></div>
+      <div style="font-size:3rem;">⚠️</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S6 Vote -->
+<div class="slide" id="s6">
+<div class="si">
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.5rem;">
+    <div class="stag" style="margin:0;">即時投票</div>
+    <span class="live">LIVE</span>
+  </div>
+  <div class="h1" style="font-size:3rem;">電子支付讓你花<span class="ac">更多錢</span>嗎？</div>
+  <p class="sub">Pain of Paying 課堂互動驗證</p>
+  <div class="vlay">
+    <div class="vbars">
+      <div class="vi vyes">
+        <div class="vh"><div class="vico">📈</div><span class="vn">是的，花更多了</span><span class="vp" id="vp-yes">0%</span></div>
+        <div class="vtrk"><div class="vfil" id="vb-yes" style="width:0%"></div></div>
+        <span class="vct" id="vc-yes">0 票</span>
+      </div>
+      <div class="vi vno">
+        <div class="vh"><div class="vico">💰</div><span class="vn">沒有，差不多</span><span class="vp" id="vp-no">0%</span></div>
+        <div class="vtrk"><div class="vfil" id="vb-no" style="width:0%"></div></div>
+        <span class="vct" id="vc-no">0 票</span>
+      </div>
+      <div class="vi vmb">
+        <div class="vh"><div class="vico">🤔</div><span class="vn">不確定</span><span class="vp" id="vp-mb">0%</span></div>
+        <div class="vtrk"><div class="vfil" id="vb-mb" style="width:0%"></div></div>
+        <span class="vct" id="vc-mb">0 票</span>
+      </div>
+    </div>
+    <div class="vside">
+      <div class="vtot"><div class="big" id="vtotal">0</div><div class="lbl">// TOTAL_VOTES</div></div>
+      <svg id="vpie" width="130" height="130" viewBox="0 0 130 130" style="display:block;margin:0 auto;"></svg>
+      <div class="vleg">
+        <div class="vlrow"><div class="vldot" style="background:#ff4560"></div>是的，花更多了</div>
+        <div class="vlrow"><div class="vldot" style="background:var(--cyan)"></div>沒有，差不多</div>
+        <div class="vlrow"><div class="vldot" style="background:var(--gold)"></div>不確定</div>
+      </div>
+      <div class="qr-block">
+        <div class="qlbl">// 學生掃碼投票</div>
+        <canvas id="qr6"></canvas>
+      </div>
+      <button class="btn-clr" onclick="resetVote()">清除投票</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S7 Nudge -->
+<div class="slide" id="s7">
+<div class="si">
+  <div class="stag">決策推力</div>
+  <div class="h1">回饋機制的 <span class="ac">Nudge</span> 效應</div>
+  <p class="sub">回饋是改變決策的強力誘因</p>
+  <div class="nlay">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+        <div style="font-size:2.5rem;">🎯</div>
+        <div><h3 style="font-size:1.1rem;font-weight:700;">聚餐「搶付」現象</h3>
+          <p style="font-size:12px;color:var(--muted);">WellMedia 街頭大調查</p></div>
+      </div>
+      <div class="nbig">3–10<span style="font-size:2.2rem;">%</span></div>
+      <p style="font-size:.88rem;color:var(--muted);margin:.5rem 0 1rem;">精算支付工具可獲得的點數或現金回饋</p>
+      <div class="ibox">「回饋」不僅是行銷費用，更是改變消費決策、打破慣性的強大推力（Nudge）。</div>
+    </div>
+    <div class="card" style="border-color:rgba(245,158,11,.2);">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),#f97316);"></div>
+      <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem;">Nudge 推力機制</h3>
+      <div class="nlist">
+        <div class="nitem"><div class="ndot2" style="background:var(--gold)"></div><p><strong>行為觸發</strong>：回饋通知在消費瞬間出現，大幅降低決策阻力。</p></div>
+        <div class="nitem"><div class="ndot2" style="background:var(--gold)"></div><p><strong>工具精算</strong>：消費者依場景切換最優支付工具，追求邊際效益最大化。</p></div>
+        <div class="nitem"><div class="ndot2" style="background:var(--gold)"></div><p><strong>社交驗證</strong>：「搶付」成為數位原生世代的社交資本展示行為。</p></div>
+        <div class="nitem"><div class="ndot2" style="background:var(--gold)"></div><p><strong>平台黏著</strong>：回饋生態強化用戶留存，形成支付習慣鎖定效應。</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S8 Street Poll -->
+<div class="slide" id="s8">
+<div class="si">
+  <div class="stag">街頭民調</div>
+  <div class="h1">支付行為的<span class="ac">結構化編碼</span></div>
+  <p class="sub">日常消費實證 · 街頭採訪影片行為分析統計</p>
+  <div class="play">
+    <div class="dwrap">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle cx="110" cy="110" r="90" fill="none" stroke="rgba(14,165,233,0.08)" stroke-width="36"/>
+        <circle cx="110" cy="110" r="90" fill="none" stroke="var(--blue)" stroke-width="36"
+          stroke-dasharray="350 565" stroke-dashoffset="141" transform="rotate(-90 110 110)">
+          <animate attributeName="stroke-dasharray" from="0 565" to="350 565" dur="1.5s" fill="freeze"/>
+        </circle>
+        <circle cx="110" cy="110" r="90" fill="none" stroke="var(--cyan)" stroke-width="36"
+          stroke-dasharray="170 565" stroke-dashoffset="-209" transform="rotate(-90 110 110)">
+          <animate attributeName="stroke-dasharray" from="0 565" to="170 565" dur="1.5s" begin="0.3s" fill="freeze"/>
+        </circle>
+        <circle cx="110" cy="110" r="90" fill="none" stroke="var(--gold)" stroke-width="36"
+          stroke-dasharray="45 565" stroke-dashoffset="-379" transform="rotate(-90 110 110)">
+          <animate attributeName="stroke-dasharray" from="0 565" to="45 565" dur="1.5s" begin="0.6s" fill="freeze"/>
+        </circle>
+        <circle cx="110" cy="110" r="54" fill="#020b18"/>
+        <text x="110" y="105" text-anchor="middle" fill="var(--white)" font-size="28" font-weight="900" font-family="monospace">62%</text>
+        <text x="110" y="122" text-anchor="middle" fill="var(--muted)" font-size="11">數位主力</text>
+      </svg>
+      <div class="dleg">
+        <div class="dlrow"><div class="dlc" style="background:var(--blue)"></div><span class="dln">數位主力</span><span class="dlp">62%</span></div>
+        <div class="dlrow"><div class="dlc" style="background:var(--cyan)"></div><span class="dln">雙軌混合</span><span class="dlp">30%</span></div>
+        <div class="dlrow"><div class="dlc" style="background:var(--gold)"></div><span class="dln">傳統現金</span><span class="dlp">8%</span></div>
+      </div>
+    </div>
+    <div class="pright">
+      <div class="psc"><div class="pp" style="color:var(--blue);">62%</div><div class="pi"><h4>數位主力</h4><p>完全以電子支付為主，主導日常消費場景，鮮少攜帶現金。</p></div></div>
+      <div class="psc"><div class="pp" style="color:var(--cyan);">30%</div><div class="pi"><h4>雙軌混合</h4><p>以電子支付為主，現金作為備用金（備援機制）靈活搭配。</p></div></div>
+      <div class="psc"><div class="pp" style="color:var(--gold);">8%</div><div class="pi"><h4>傳統現金</h4><p>受限於數位落差或特殊場景，仍以現金為主要支付工具。</p></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S9 Persona -->
+<div class="slide" id="s9">
+<div class="si">
+  <div class="stag">消費者畫像</div>
+  <div class="h1">新舊世代的<span class="ac">支付決策差異</span></div>
+  <p class="sub">Persona Analysis · 支付工具選擇反映個人價值觀</p>
+  <div class="pelay">
+    <div class="pecrd dig">
+      <span class="pebdg">DIGITAL NATIVE</span>
+      <div class="peh3">🎯 精算回饋族</div>
+      <div class="petrs">
+        <div class="petr"><span class="petk">特徵</span><span class="petv">數位原生代，對科技接受度高</span></div>
+        <div class="petr"><span class="petk">行為</span><span class="petv">靈活搭配各種支付 APP 與綁定卡片，依場景精算最高回饋</span></div>
+        <div class="petr"><span class="petk">目標</span><span class="petv">追求邊際效益最大化，將回饋視為隱性收入</span></div>
+        <div class="petr"><span class="petk">痛點</span><span class="petv">支付無感導致容易過度消費，預算透明度低</span></div>
+      </div>
+      <div class="peq">「哪張卡回饋最高就刷哪張，聚餐當然要搶著付！」</div>
+    </div>
+    <div class="pecrd csh">
+      <span class="pebdg">CASH GUARDIAN</span>
+      <div class="peh3">🛡️ 支出控管族</div>
+      <div class="petrs">
+        <div class="petr"><span class="petk">特徵</span><span class="petv">重視風險控管，偏好有形的財務控制感</span></div>
+        <div class="petr"><span class="petk">行為</span><span class="petv">偏好傳統現金或固定額度支付，實體帳本記帳</span></div>
+        <div class="petr"><span class="petk">目標</span><span class="petv">追求預算透明度與絕對控制感</span></div>
+        <div class="petr"><span class="petk">優勢</span><span class="petv">物理剝奪感強，消費自然節制，隱私保護完整</span></div>
+      </div>
+      <div class="peq">「看著錢包裡的現金減少，我就知道該停了。」</div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.12);border-radius:10px;padding:.9rem 1.4rem;font-size:.88rem;color:var(--muted);text-align:center;">
+    支付工具的選擇，本質上反映了個人對「<strong style="color:var(--white)">風險控管</strong>」與「<strong style="color:var(--white)">效率偏好</strong>」的不同價值觀。
+  </div>
+</div>
+</div>
+
+<!-- S10 Data Governance -->
+<div class="slide" id="s10">
+<div class="si">
+  <div class="stag">大數據價值</div>
+  <div class="h1">從「支付」到「<span class="ac">數據治理</span>」</div>
+  <p class="sub">支付即數據 · Payment as Data</p>
+  <div class="dlay">
+    <div class="stpc">
+      <div class="stpn">01</div>
+      <div style="font-size:2rem;">📊</div>
+      <h3>支付即數據</h3>
+      <p>交易軌跡數位化，每筆支付都產生行為數據，有效降低消費端與商業端的資訊不對稱。</p>
+    </div>
+    <div class="stpc">
+      <div class="stpn">02</div>
+      <div style="font-size:2rem;">🎯</div>
+      <h3>應用價值</h3>
+      <p>精準行銷推播 / 信用評分優化 / 風險預測模型，支付數據成為金融科技核心資產。</p>
+    </div>
+    <div class="stpc">
+      <div class="stpn">03</div>
+      <div style="font-size:2rem;">⚖️</div>
+      <h3>治理挑戰</h3>
+      <p>數據價值鏈必須與個資隱私保護及法規合規同步，兩者缺一不可。</p>
+    </div>
+  </div>
+  <div class="dbot" style="margin-top:1.4rem;">
+    <div class="qt">「未來最有價值的，不是<span>支付</span>，而是支付後留下的<span>數據</span>。」</div>
+  </div>
+</div>
+</div>
+
+<!-- S11 Policy -->
+<div class="slide" id="s11">
+<div class="si">
+  <div class="stag">政策監理</div>
+  <div class="h1">普惠金融與<span class="ac">監理挑戰</span></div>
+  <p class="sub">Financial Inclusion vs. Regulatory Challenge</p>
+  <div class="polay">
+    <div class="pocrd inc">
+      <div class="poico">🌐</div>
+      <h3>金融包容性 Financial Inclusion</h3>
+      <p>數位支付普及需正視數位落差問題，避免因技術障礙導致弱勢族群（長者、偏鄉居民）進一步邊緣化。</p>
+      <div class="ibox" style="margin-top:auto;">建立數位金融識能教育，讓每個人都能參與數位支付生態。</div>
+    </div>
+    <div class="pocrd reg" style="border-color:rgba(139,92,246,.2);">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--purple),#ec4899);"></div>
+      <div class="poico">🔒</div>
+      <h3>數位監理挑戰 Regulatory Challenge</h3>
+      <p>電子支付帶來個資隱私外洩風險、過度消費陷阱及跨境支付的監理灰色地帶，需要主動因應。</p>
+      <div class="ibox" style="border-color:var(--purple);margin-top:auto;">金融科技監理需在創新促進與消費者保護間取得動態平衡。</div>
+    </div>
+  </div>
+  <div style="margin-top:1.4rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+    <div style="background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.15);border-radius:10px;padding:.9rem;text-align:center;">
+      <div style="font-size:1.8rem;font-weight:900;color:var(--blue);font-family:'JetBrains Mono',monospace;">3,947萬</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">電子支付用戶</div>
+    </div>
+    <div style="background:rgba(6,255,165,.05);border:1px solid rgba(6,255,165,.15);border-radius:10px;padding:.9rem;text-align:center;">
+      <div style="font-size:1.8rem;font-weight:900;color:var(--cyan);font-family:'JetBrains Mono',monospace;">8%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">仍以現金為主</div>
+    </div>
+    <div style="background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15);border-radius:10px;padding:.9rem;text-align:center;">
+      <div style="font-size:1.8rem;font-weight:900;color:var(--gold);font-family:'JetBrains Mono',monospace;">10兆</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">2026年目標規模</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S12 Conclusion -->
+<div class="slide" id="s12">
+<div class="si">
+  <div class="stag">結論</div>
+  <div class="h1">數位與實體的<span class="ac">和諧共存</span></div>
+  <div class="gline"></div>
+  <div class="cgrid">
+    <div class="ccrd"><span class="ctag">// 01_商業進化</span><h3>支付媒介的典範轉移</h3><p>支付媒介演進深刻反映出消費行為與商業模式的根本改變，從實體到數位是不可逆的結構性轉型。</p></div>
+    <div class="ccrd" style="border-color:rgba(255,69,96,.2);"><span class="ctag" style="color:var(--red);">// 02_雙刃劍效應</span><h3>便利性的代價</h3><p>電子支付創造了極致便利性，卻也伴隨著過度消費風險與個資隱私治理的嚴峻挑戰。</p></div>
+    <div class="ccrd" style="border-color:rgba(245,158,11,.2);"><span class="ctag" style="color:var(--gold);">// 03_現金防線</span><h3>現金的不可取代性</h3><p>現金不會完全消失，已轉型為流動性保險與場景備援的不可或缺機制。</p></div>
+    <div class="ccrd" style="border-color:rgba(6,255,165,.2);"><span class="ctag" style="color:var(--cyan);">// 04_終極願景</span><h3>共存互補的未來</h3><p>現金與電子支付將長期共存、互補，在不同情境中各自發揮不可替代的功能與社會價值。</p></div>
+  </div>
+</div>
+</div>
+
+<!-- S13 Thank You -->
+<div class="slide" id="s13">
+  <div class="pts" id="pts"></div>
+  <div class="si">
+    <div class="tyico">💳</div>
+    <div class="tyh1">支付即未來</div>
+    <p class="tysub">Payment is the Future</p>
+    <p class="tymin">感謝聆聽 · 第九組 · 指導教授：林泰宇</p>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button id="nprev" onclick="chg(-1)">‹</button>
+  <div id="ndots"></div>
+  <span id="ncnt">1/13</span>
+  <button id="nnext" onclick="chg(1)">›</button>
+</div>
+
+<!-- QR Code lib -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const FB = {
+  apiKey:"AIzaSyAlBZIMsos3aTHr5-4M6vopCk9mCJv-IPU",
+  authDomain:"payment-presentation.firebaseapp.com",
+  databaseURL:"https://payment-presentation-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"payment-presentation",
+  storageBucket:"payment-presentation.firebasestorage.app",
+  messagingSenderId:"288068120899",
+  appId:"1:288068120899:web:03a33e0ab3c4b78db2bff6"
+};
+const app = initializeApp(FB);
+const db = getDatabase(app);
+
+// ── Nav ──
+const slides = document.querySelectorAll('.slide');
+const N = slides.length;
+let cur = 0;
+const dotsEl = document.getElementById('ndots');
+slides.forEach((_,i)=>{
+  const d=document.createElement('button');
+  d.className='ndot'+(i===0?' active':'');
+  d.onclick=()=>go(i); dotsEl.appendChild(d);
+});
+function go(n){
+  slides[cur].classList.remove('active'); slides[cur].classList.add('exit');
+  setTimeout(()=>slides[cur].classList.remove('exit'),600);
+  dotsEl.children[cur].classList.remove('active');
+  cur=n; slides[cur].classList.add('active');
+  dotsEl.children[cur].classList.add('active');
+  document.getElementById('ncnt').textContent=(cur+1)+'/'+N;
+}
+window.chg=d=>{const n=cur+d;if(n>=0&&n<N)go(n);};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')chg(1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')chg(-1);
+});
+
+// ── QR Codes ──
+const BASE = 'https://won237bin9935-dot.github.io/payment-slides/';
+function makeQR(id, url){
+  const el = document.getElementById(id);
+  if(!el) return;
+  new QRCode(el, {text:url, width:110, height:110,
+    colorDark:'#f0f8ff', colorLight:'#041020',
+    correctLevel: QRCode.CorrectLevel.M});
+}
+makeQR('qr2', BASE+'slide2-audience.html');
+makeQR('qr6', BASE+'slide5-audience.html');
+
+// ── Word Cloud ──
+const COLS=['#0ea5e9','#06ffa5','#f59e0b','#8b5cf6','#ff4560','#ec4899','#3b82f6','#14b8a6','#f97316','#a855f7'];
+const wcRef = ref(db,'wordcloud/votes');
+let wordMap = {};
+onValue(wcRef, snap=>{
+  wordMap={};
+  snap.forEach(c=>{const w=(c.val().word||'').trim();if(w)wordMap[w]=(wordMap[w]||0)+1;});
+  const sorted=Object.entries(wordMap).map(([word,count])=>({word,count})).sort((a,b)=>b.count-a.count);
+  const tot=sorted.reduce((s,w)=>s+w.count,0);
+  document.getElementById('wctotal').textContent=tot;
+  const listEl=document.getElementById('wlist'); listEl.innerHTML='';
+  const maxC=sorted[0]?.count||1;
+  sorted.slice(0,8).forEach((w,i)=>{
+    const row=document.createElement('div'); row.className='wrow';
+    row.innerHTML=`<span class="wrnk">${i+1}</span><span class="wword">${w.word}</span><div class="wbg"><div class="wbf" style="width:${Math.round(w.count/maxC*100)}%"></div></div><span class="wcnt">${w.count}</span>`;
+    listEl.appendChild(row);
+  });
+  drawCloud(sorted.slice(0,40));
+});
+function drawCloud(words){
+  const canvas=document.getElementById('ccanvas');
+  const wrap=document.getElementById('cwrap');
+  canvas.width=wrap.offsetWidth; canvas.height=wrap.offsetHeight;
+  const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+  const ph=document.getElementById('cph');
+  if(!words.length){ph.style.display='flex';return;} ph.style.display='none';
+  const maxC=Math.max(...words.map(w=>w.count));
+  const cx=canvas.width/2, cy=canvas.height/2;
+  const placed=[];
+  words.forEach((w,i)=>{
+    const ratio=w.count/maxC;
+    const size=Math.max(16,Math.min(88,16+ratio*72));
+    ctx.font=`700 ${size}px 'Noto Sans TC',sans-serif`;
+    const tw=ctx.measureText(w.word).width;
+    const color=COLS[i%COLS.length];
+    let x,y,found=false;
+    for(let r=0;r<320;r++){
+      const angle=r*.35, radius=r*1.9;
+      x=cx+Math.cos(angle)*radius-tw/2;
+      y=cy+Math.sin(angle)*radius+size/3;
+      const rect={x,y:y-size,w:tw,h:size+4};
+      const ok=!placed.some(p=>rect.x<p.x+p.w&&rect.x+rect.w>p.x&&rect.y<p.y+p.h&&rect.y+rect.h>p.y);
+      if(ok&&x>8&&x+tw<canvas.width-8&&y-size>8&&y<canvas.height-8){found=true;placed.push(rect);break;}
+    }
+    if(!found)return;
+    ctx.shadowColor=color; ctx.shadowBlur=ratio>.5?18:6;
+    ctx.fillStyle=color; ctx.globalAlpha=.45+ratio*.55;
+    ctx.fillText(w.word,x,y);
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
+  });
+}
+window.resetWC=async()=>{if(confirm('清除文字雲資料？'))await remove(wcRef);};
+
+// ── Reveal ──
+const rwrap=document.getElementById('rwrap');
+const rhtml=document.getElementById('rhtml');
+const rdiv=document.getElementById('rdiv');
+const rhandle=document.getElementById('rhandle');
+const rpct=document.getElementById('rpct');
+let rdrag=false, rcur=0;
+function setRev(p){
+  p=Math.max(2,Math.min(98,p)); rcur=p;
+  rhtml.style.clipPath=`inset(0 ${100-p}% 0 0)`;
+  rdiv.style.left=p+'%'; rhandle.style.left=p+'%';
+  rpct.textContent=Math.round(p)+'%';
+}
+function rp(cx){const r=rwrap.getBoundingClientRect();return((cx-r.left)/r.width)*100;}
+rhandle.addEventListener('mousedown',e=>{rdrag=true;e.preventDefault();e.stopPropagation();});
+document.addEventListener('mousemove',e=>{if(rdrag)setRev(rp(e.clientX));});
+document.addEventListener('mouseup',()=>{rdrag=false;});
+rhandle.addEventListener('touchstart',e=>{rdrag=true;e.preventDefault();},{passive:false});
+document.addEventListener('touchmove',e=>{if(rdrag){setRev(rp(e.touches[0].clientX));e.preventDefault();}},{passive:false});
+document.addEventListener('touchend',()=>{rdrag=false;});
+rwrap.addEventListener('click',e=>{if(e.target!==rhandle)setRev(rp(e.clientX));});
+setRev(0);
+
+// ── Vote ──
+const voteRef=ref(db,'poll/votes');
+function drawPie(yes,no,mb){
+  const svg=document.getElementById('vpie'); svg.innerHTML='';
+  const tot=yes+no+mb;
+  if(!tot){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx','65');c.setAttribute('cy','65');c.setAttribute('r','50');c.setAttribute('fill','rgba(255,255,255,0.03)');svg.appendChild(c);return;}
+  const cx=65,cy=65,r=50,gap=.04;
+  [{val:yes,color:'#ff4560'},{val:no,color:'#06ffa5'},{val:mb,color:'#f59e0b'}].reduce((ang,d)=>{
+    if(!d.val)return ang;
+    const sw=(d.val/tot)*(Math.PI*2)-gap;
+    const x1=cx+r*Math.cos(ang+gap/2),y1=cy+r*Math.sin(ang+gap/2);
+    const x2=cx+r*Math.cos(ang+sw+gap/2),y2=cy+r*Math.sin(ang+sw+gap/2);
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${sw>Math.PI?1:0},1 ${x2},${y2} Z`);
+    p.setAttribute('fill',d.color);p.setAttribute('opacity','.85');svg.appendChild(p);
+    return ang+sw+gap;
+  },-Math.PI/2);
+  const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  hole.setAttribute('cx','65');hole.setAttribute('cy','65');hole.setAttribute('r','28');
+  hole.setAttribute('fill','#020b18');svg.appendChild(hole);
+}
+onValue(voteRef,snap=>{
+  let yes=0,no=0,mb=0;
+  snap.forEach(c=>{const v=c.val().choice;if(v==='yes')yes++;else if(v==='no')no++;else mb++;});
+  const tot=yes+no+mb;
+  const pct=v=>tot?Math.round(v/tot*100):0;
+  document.getElementById('vtotal').textContent=tot;
+  ['yes','no','mb'].forEach((k,i)=>{
+    const v=[yes,no,mb][i];
+    document.getElementById('vb-'+k).style.width=pct(v)+'%';
+    document.getElementById('vp-'+k).textContent=pct(v)+'%';
+    document.getElementById('vc-'+k).textContent=v+' 票';
+  });
+  drawPie(yes,no,mb);
+});
+window.resetVote=async()=>{if(confirm('清除投票資料？'))await remove(voteRef);};
+
+// ── Particles ──
+const ptsEl=document.getElementById('pts');
+for(let i=0;i<25;i++){
+  const p=document.createElement('div'); p.className='pt';
+  const cs=['#0ea5e9','#06ffa5','#f59e0b','#8b5cf6'];
+  p.style.cssText=`left:${Math.random()*100}%;width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;background:${cs[i%4]};animation-duration:${5+Math.random()*6}s;animation-delay:${Math.random()*5}s;`;
+  ptsEl.appendChild(p);
+}
+</script>
+</body>
+</html>
